@@ -1,11 +1,11 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Pedidos } from './_Components/pedidos/pedidos';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [Pedidos],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class App {
   protected readonly title = signal('jbq_func4_frontend');

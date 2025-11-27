@@ -1,0 +1,54 @@
+<div class="container">
+  <h1 class="titulo">Pedidos</h1>
+
+  <div class="tabela-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th class="center">Ações</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let p of pedidos" class="row">
+          <td>{{ p.id }}</td>
+          <td>{{ p.cliente }}</td>
+          <td>R$ {{ p.total.toFixed(2) }}</td>
+          <td>{{ p.status }}</td>
+          <td>{{ p.data }}</td>
+          <td class="center">
+            <button class="btn icon" (click)="abrirDetalhes(p)">👁</button>
+            <button class="btn icon" (click)="editarPedido(p.id)">✏️</button>
+            <button class="btn icon" (click)="cancelarPedido(p.id)">❌</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="modal-overlay" *ngIf="selectedPedido">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Detalhes do Pedido #{{ selectedPedido.id }}</h2>
+          <button class="btn-close" (click)="fecharDetalhes()">✖</button>
+        </div>
+
+        <div class="modal-body">
+          <p><strong>Cliente:</strong> {{ selectedPedido.cliente }}</p>
+          <p><strong>Status:</strong> {{ selectedPedido.status }}</p>
+          <p><strong>Total:</strong> R$ {{ selectedPedido.total.toFixed(2) }}</p>
+          <p><strong>Data:</strong> {{ selectedPedido.data }}</p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-primary" (click)="editarPedido(selectedPedido!.id)">Editar</button>
+          <button class="btn-danger" (click)="cancelarPedido(selectedPedido!.id)">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
