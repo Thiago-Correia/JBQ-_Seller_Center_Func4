@@ -3,113 +3,254 @@ package br.com.func4_backend.func4_backend.service;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import br.com.func4_backend.func4_backend.exception.ParametersNotMetException;
 import br.com.func4_backend.func4_backend.exception.ResourceNotFoundException;
 import br.com.func4_backend.func4_backend.model.OrderItem;
 import br.com.func4_backend.func4_backend.model.Pedido;
 import br.com.func4_backend.func4_backend.model.Produto;
 import br.com.func4_backend.func4_backend.repo.OrderItemRepo;
 import br.com.func4_backend.func4_backend.repo.PedidoRepo;
-import br.com.func4_backend.func4_backend.repo.ProdutoRepo;
 import jakarta.transaction.Transactional;
 
 @Service
 public class PedidoService {
 
-    private final PedidoRepo pedidoRepo;
-    private final OrderItemRepo itemRepo;
-    private final ProdutoRepo produtoRepo;
-    private final HistoricoPedidoService orderHistoryService;
+    @Autowired
+    private PedidoRepo pedidoRepo;
+    @Autowired
+    private OrderItemRepo itemRepo;
+    @Autowired
+    private ProdutoService produtoService;
+    @Autowired
+    private HistoricoPedidoService historicoPedidoService;
 
-    public PedidoService(PedidoRepo pedidoRepo, OrderItemRepo itemRepo,
-                         ProdutoRepo produtoRepo, HistoricoPedidoService orderHistoryService) {
-        this.pedidoRepo = pedidoRepo;
-        this.itemRepo = itemRepo;
-        this.produtoRepo = produtoRepo;
-        this.orderHistoryService = orderHistoryService;
-    }
 
-    public List<Pedido> listar() {
-        return pedidoRepo.findAll();
-    }
-
-    public Pedido buscar(Long id) {
-        return pedidoRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado"));
-    }
-
+    
     @Transactional
-    public Pedido salvar(Pedido pedido) {
+    public Pedido create(Pedido pedido) {
 
         if (pedido.getItens() == null || pedido.getItens().isEmpty()) {
-            throw new RuntimeException("Pedido deve ter ao menos 1 item");
+            throw new ParametersNotMetException("Pedido deve ter ao menos 1 item");
         }
 
-        BigDecimal total = BigDecimal.ZERO;
+        checarEstoque(pedido);
 
-        // Primeiro: carregar os produtos corretos do BD
-        for (OrderItem item : pedido.getItens()) {
-
-            Long idProduto = item.getProduto().getId();
-
-            Produto produtoBD = produtoRepo.findById(idProduto)
-                    .orElseThrow(() -> new RuntimeException("Produto não encontrado: " + idProduto));
-
-            // Verificar estoque
-            if (produtoBD.getEstoque() < item.getQuantidade()) {
-                throw new RuntimeException("Estoque insuficiente para o produto: " + produtoBD.getNome());
-            }
-
-            // Preço unitário vem do BD (segurança)
-            item.setPrecoUnitario(produtoBD.getPreco());
-
-            // Prepara o vínculo inverso
-            item.setPedido(pedido);
-
-            // Soma total
-            BigDecimal parcial = produtoBD.getPreco()
-                    .multiply(BigDecimal.valueOf(item.getQuantidade()));
-
-            total = total.add(parcial);
-        }
-
-        // Atualiza total do pedido
+        BigDecimal total = calcularTotal(pedido);
         pedido.setTotal(total);
 
-        // Salvar pedido primeiro (ID gerado)
-        Pedido pedidoSalvo = pedidoRepo.save(pedido);
+        atualizarEstoque(pedido, true);
 
-        // Agora salvar itens com pedido_id
+        Pedido salvo = pedidoRepo.save(pedido);
+
+        historicoPedidoService.create(pedido);
+
         for (OrderItem item : pedido.getItens()) {
-            item.setPedido(pedidoSalvo);
+            item.setPedido(salvo);
             itemRepo.save(item);
         }
 
-        return pedidoSalvo;
+        return salvo;
+    }
+
+    @Transactional
+    public Pedido updateWithStock(Long id, Pedido pedidoNovo) {
+
+        Pedido pedidoVelho = buscar(id);
+
+        if (pedidoNovo.getItens() == null || pedidoNovo.getItens().isEmpty()) {
+            throw new ParametersNotMetException("Pedido deve ter ao menos 1 item");
+        }
+
+        checarEstoqueAtualizacao(pedidoNovo, pedidoVelho);
+
+        BigDecimal total = calcularTotal(pedidoNovo);
+        pedidoNovo.setTotal(total);
+
+        reconciliarEstoque(pedidoNovo, pedidoVelho);
+
+        pedidoNovo.setId(id);
+        Pedido salvo = pedidoRepo.save(pedidoNovo);
+
+        historicoPedidoService.update(pedidoNovo, "Estoque atualizado");
+
+        itemRepo.deleteByPedidoId(id);
+        for (OrderItem item : pedidoNovo.getItens()) {
+            item.setPedido(salvo);
+            itemRepo.save(item);
+        }
+
+        return salvo;
     }
 
 
     @Transactional
     public Pedido cancelar(Long id) {
-        Pedido p = buscar(id);
-        if ("CANCELADO".equalsIgnoreCase(p.getStatus())) {
-            throw new IllegalArgumentException("Pedido já está cancelado");
-        }
-        // apenas permitir cancelamento em certos status (ex: PENDENTE)
-        if (!"PENDENTE".equalsIgnoreCase(p.getStatus()) && !"ABERTO".equalsIgnoreCase(p.getStatus())) {
-            throw new IllegalArgumentException("Não é possível cancelar pedido no status: " + p.getStatus());
+        Pedido pedido = buscar(id);
+
+        if ("CANCELADO".equalsIgnoreCase(pedido.getStatus())) {
+            throw new ParametersNotMetException("Pedido já está cancelado");
         }
 
-        // devolver estoque
-        for (OrderItem item : p.getItens()) {
-            Produto prod = produtoRepo.findById(item.getProduto().getId()).orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado"));
-            prod.setEstoque(prod.getEstoque() + item.getQuantidade());
-            produtoRepo.save(prod);
+        // Devolve estoque produto por produto
+        for (OrderItem item : pedido.getItens()) {
+            Produto produto = produtoService.buscar(item.getProduto().getId());
+            produto.setEstoque(produto.getEstoque() + item.getQuantidade());
+            produtoService.save(produto);
         }
 
-        p.setStatus("CANCELADO");
-        Pedido updated = pedidoRepo.save(p);
-        orderHistoryService.logEvent(p.getId(), "CANCELLED", "Pedido cancelado");
-        return updated;
+        pedido.setStatus("CANCELADO");
+        historicoPedidoService.cancel(pedido);
+        
+        return pedidoRepo.save(pedido);
+    }
+
+    @Transactional
+    public void checarEstoque(Pedido pedido) {
+        for (OrderItem item : pedido.getItens()) {
+
+            Produto produto = produtoService.buscar(item.getProduto().getId());
+
+            if (produto.getEstoque() < item.getQuantidade()) {
+                throw new ParametersNotMetException(
+                    "Estoque insuficiente para o produto: " + produto.getNome()
+                );
+            }
+        }
+    }
+
+    @Transactional
+    public void atualizarEstoque(Pedido pedido, boolean remover) {
+
+        for (OrderItem item : pedido.getItens()) {
+
+            Produto produto = produtoService.buscar(item.getProduto().getId());
+            int qtd = item.getQuantidade();
+
+            if (remover) {
+                if (produto.getEstoque() < qtd) {
+                    throw new ParametersNotMetException("Estoque insuficiente para o produto: " + produto.getNome());
+                }
+                produto.setEstoque(produto.getEstoque() - qtd);
+            } else {
+                produto.setEstoque(produto.getEstoque() + qtd);
+            }
+
+            produtoService.save(produto);
+        }
+    }
+
+
+
+    @Transactional
+    public void checarEstoqueAtualizacao(Pedido novo, Pedido velho) {
+
+        for (OrderItem itemNovo : novo.getItens()) {
+
+            int qtdNova = itemNovo.getQuantidade();
+            Long idProduto = itemNovo.getProduto().getId();
+
+            int qtdVelha = 0;
+            for (OrderItem itemVelho : velho.getItens()) {
+                if (itemVelho.getProduto().getId().equals(idProduto)) {
+                    qtdVelha = itemVelho.getQuantidade();
+                    break;
+                }
+            }
+
+            int diferenca = qtdNova - qtdVelha;
+
+            if (diferenca > 0) {
+                Produto produto = produtoService.buscar(idProduto);
+                if (produto.getEstoque() < diferenca) {
+                    throw new ParametersNotMetException(
+                        "Estoque insuficiente para o produto: " + produto.getNome()
+                    );
+                }
+            }
+        }
+    }
+
+    @Transactional
+    public void reconciliarEstoque(Pedido novo, Pedido velho) {
+
+        for (OrderItem itemNovo : novo.getItens()) {
+
+            Long idProduto = itemNovo.getProduto().getId();
+            int qtdNova = itemNovo.getQuantidade();
+
+            int qtdVelha = 0;
+            for (OrderItem itemVelho : velho.getItens()) {
+                if (itemVelho.getProduto().getId().equals(idProduto)) {
+                    qtdVelha = itemVelho.getQuantidade();
+                    break;
+                }
+            }
+
+            int diferenca = qtdNova - qtdVelha;
+
+            Produto produto = produtoService.buscar(idProduto);
+
+            if (diferenca > 0) {
+                produto.setEstoque(produto.getEstoque() - diferenca);
+            } else if (diferenca < 0) {
+                produto.setEstoque(produto.getEstoque() + Math.abs(diferenca));
+            }
+
+            produtoService.save(produto);
+        }
+
+        for (OrderItem itemVelho : velho.getItens()) {
+
+            Long idProdutoVelho = itemVelho.getProduto().getId();
+
+            boolean existe = false;
+            for (OrderItem itemNovo : novo.getItens()) {
+                if (itemNovo.getProduto().getId().equals(idProdutoVelho)) {
+                    existe = true;
+                    break;
+                }
+            }
+
+            if (!existe) {
+                Produto produto = produtoService.buscar(idProdutoVelho);
+                produto.setEstoque(produto.getEstoque() + itemVelho.getQuantidade());
+                produtoService.save(produto);
+            }
+        }
+    }
+
+    @Transactional
+    public BigDecimal calcularTotal(Pedido pedido) {
+
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (OrderItem item : pedido.getItens()) {
+
+            Produto produto = produtoService.buscar(item.getProduto().getId());
+            
+            item.setPrecoUnitario(produto.getPreco());
+
+            BigDecimal parcial = 
+                produto.getPreco().multiply(BigDecimal.valueOf(item.getQuantidade()));
+
+            total = total.add(parcial);
+        }
+
+        return total;
+    }
+
+    public Pedido buscar(Long id) {
+        return pedidoRepo.findById(id).orElseThrow(() -> new ParametersNotMetException("Pedido não encontrado: " + id));
+    }
+
+    public List<Pedido> listar() {
+        List<Pedido> pedidos = pedidoRepo.findAll();
+        if(pedidos.isEmpty()){
+            throw new ResourceNotFoundException("Não há pedidos");
+        }
+        return pedidos;
     }
 }

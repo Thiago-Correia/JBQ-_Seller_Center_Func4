@@ -29,6 +29,12 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Pedido {
+    //Produtos
+    //Data de criação
+    //Valor total
+    //Status
+    //Nome do cliente
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -39,7 +45,7 @@ public class Pedido {
     private BigDecimal total;
 
     @Builder.Default
-    private String status = "PENDENTE"; // ex: PENDENTE, PAGO, CANCELADO, ENVIADO
+    private String status = "PENDENTE"; //PENDENTE, APROVADO, CANCELADO, ENVIADO
 
     @Column(name = "cliente_nome")
     private String clienteNome;

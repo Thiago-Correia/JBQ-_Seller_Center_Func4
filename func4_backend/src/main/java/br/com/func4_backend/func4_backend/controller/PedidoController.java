@@ -2,6 +2,7 @@ package br.com.func4_backend.func4_backend.controller;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,25 +15,34 @@ import br.com.func4_backend.func4_backend.model.Pedido;
 import br.com.func4_backend.func4_backend.service.PedidoService;
 
 @RestController
-@RequestMapping("/api/pedidos")
+@RequestMapping("/api/orders")
 public class PedidoController {
 
-    private final PedidoService service;
+    @Autowired
+    private PedidoService service;
 
-    public PedidoController(PedidoService service) {
-        this.service = service;
-    }
 
     @GetMapping
-    public List<Pedido> listar() { return service.listar(); }
+    public ResponseEntity<List<Pedido>> listar() { 
+        List<Pedido> pedidos = service.listar();
+        return ResponseEntity.ok(pedidos);
+    }
 
     @GetMapping("/{id}")
-    public Pedido buscar(@PathVariable Long id) { return service.buscar(id); }
-
+    public ResponseEntity<Pedido> buscar(@PathVariable Long id) { 
+        Pedido pedido = service.buscar(id);
+        return ResponseEntity.ok(pedido);
+    }
     @PostMapping
     public ResponseEntity<Pedido> criar(@RequestBody Pedido pedido) {
-        Pedido p = service.salvar(pedido);
-        return ResponseEntity.status(201).body(p);
+        Pedido p = service.create(pedido);
+        return ResponseEntity.ok(p);
+    }
+
+    @PostMapping("/{id}/update")
+    public ResponseEntity<Pedido> update(@RequestBody Pedido pedido, @PathVariable Long id) {
+        Pedido p = service.updateWithStock(id,pedido);
+        return ResponseEntity.ok(p);
     }
 
     @PostMapping("/{id}/cancel")
