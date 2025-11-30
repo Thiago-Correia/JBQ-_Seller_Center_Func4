@@ -21,7 +21,7 @@ Para rodar o projeto, você precisa ter instalado:
 - **MySQL** (De preferencia MySQLWorkbench)
 
 
-# Como rodar no Backend (Node.js)
+# Como rodar no Backend (Spring Boot)
 
 Antes de rodar o backend, é obrigatório editar o arquivo:
 
