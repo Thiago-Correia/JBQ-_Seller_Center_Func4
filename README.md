@@ -52,7 +52,8 @@ Mude nome_do_banco e password
   spring.output.ansi.enabled=always
   ```
 
-Usando o Spring Boot Dashboard clique em Run
+Usando o Spring Boot Dashboard clique em Run:
+
 O servidor iniciará na porta configurada (padrão: 8080).
 
 # Como rodar o Frontend (Angular)
