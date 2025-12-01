@@ -1,17 +1,19 @@
 import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-pedido-detalhes',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './pedido-detalhes.html',
-  styleUrl: './pedido-detalhes.css',
+  styleUrls: ['./pedido-detalhes.css'],
 })
 export class PedidoDetalhes {
-  @Input() id: Number = 0;
-  @Input() cliente: String = '';
-  @Input() status: String = '';
-  @Input() total: Number = 0;
-  @Input() data: String = '';
+  @Input() id: number = 0;
+  @Input() cliente: string = '';
+  @Input() status: string = '';
+  @Input() total: number = 0;
+  @Input() data: string = '';
 
   editarPedido(id: number) {
     console.log('Editar pedido:', id);
