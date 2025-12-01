@@ -1,6 +1,7 @@
 package br.com.func4_backend.func4_backend.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.func4_backend.func4_backend.exception.ParametersNotMetException;
 import br.com.func4_backend.func4_backend.exception.ResourceNotFoundException;
+import br.com.func4_backend.func4_backend.model.HistoricoPedido;
 import br.com.func4_backend.func4_backend.model.OrderItem;
 import br.com.func4_backend.func4_backend.model.Pedido;
 import br.com.func4_backend.func4_backend.model.Produto;
@@ -70,6 +72,7 @@ public class PedidoService {
         pedidoNovo.setTotal(total);
 
         reconciliarEstoque(pedidoNovo, pedidoVelho);
+        removerItensComQuantidadeZero(pedidoNovo);
 
         pedidoNovo.setId(id);
         Pedido salvo = pedidoRepo.save(pedidoNovo);
@@ -137,7 +140,6 @@ public class PedidoService {
             } else {
                 produto.setEstoque(produto.getEstoque() + qtd);
             }
-
             produtoService.save(produto);
         }
     }
@@ -222,6 +224,22 @@ public class PedidoService {
         }
     }
 
+    public void removerItensComQuantidadeZero(Pedido pedido) {
+        if (pedido.getItens() == null || pedido.getItens().isEmpty()) {
+            return;
+        }
+
+        List<OrderItem> itensParaRemover = new ArrayList<>();
+
+        for (OrderItem item : pedido.getItens()) {
+            if (item.getQuantidade() == 0) {
+                itensParaRemover.add(item);
+            }
+        }
+
+        pedido.getItens().removeAll(itensParaRemover);
+    }
+
     @Transactional
     public BigDecimal calcularTotal(Pedido pedido) {
 
@@ -252,5 +270,13 @@ public class PedidoService {
             throw new ResourceNotFoundException("Não há pedidos");
         }
         return pedidos;
+    }
+
+    public List<HistoricoPedido> listarHistorico(Long id){
+        List<HistoricoPedido> historico = historicoPedidoService.listByPedidoId(id);
+        if(historico.isEmpty()){
+            throw new ResourceNotFoundException("Esse pedido não tem historico");
+        }
+        return historico;
     }
 }

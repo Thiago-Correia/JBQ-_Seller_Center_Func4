@@ -1,5 +1,7 @@
 package br.com.func4_backend.func4_backend.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +20,12 @@ public class HistoricoPedidoService {
     @PersistenceContext
     private EntityManager em;
 
+    public List<HistoricoPedido> listByPedidoId(Long id){
+        return repo.findByPedidoId(id);
+    }
+
     public HistoricoPedido create(Pedido pedido) {
-        return repo.save(new HistoricoPedido(pedido, "CREATED"));
+        return repo.save(new HistoricoPedido(pedido, "CREATED", "Pedido Criado"));
     }
 
     public HistoricoPedido update(Pedido pedido, String event_data) {
@@ -27,6 +33,6 @@ public class HistoricoPedidoService {
     }
 
     public HistoricoPedido cancel(Pedido pedido){
-        return repo.save(new HistoricoPedido(pedido, "CANCELLED"));
+        return repo.save(new HistoricoPedido(pedido, "CANCELLED", "Pedido Cancelado"));
     }
 }
