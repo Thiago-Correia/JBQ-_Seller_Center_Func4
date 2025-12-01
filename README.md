@@ -66,3 +66,9 @@ A aplicação estará disponível em:
  ```bash
 http://localhost:4200
 ```
+## Colaboradores
+# Frontend
+Hugo e Thiago
+
+# Backend
+Thiago
