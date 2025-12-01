@@ -11,9 +11,10 @@ interface Pedido {
 
 @Component({
   selector: 'app-pedidos',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './pedidos.html',
-  styleUrl: './pedidos.css',
+  styleUrls: ['./pedidos.css'],
 })
 export class Pedidos {
   selectedPedido: Pedido | null = null;

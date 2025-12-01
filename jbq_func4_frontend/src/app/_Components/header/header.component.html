@@ -1,0 +1,32 @@
+<header class="topbar">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <div class="logo">
+    <img  src="logo.png" alt="JBQ Seller">
+  </div>
+
+  <nav class="menu">
+    <a routerLink="/home">Home</a>
+
+    <div class="dropdown-menu">
+      <span>Categorias ▾</span>
+      <div class="submenu">
+        <a routerLink="/categoria/tecnologia">Tecnologias</a>
+        <a routerLink="/categoria/roupas">Roupas</a>
+        <a routerLink="/categoria/dia-a-dia">Dia a dia</a>
+      </div>
+    </div>
+
+    <a routerLink="/ofertas">Ofertas</a>
+  </nav>
+
+  <div class="profile" (click)="toggleMenu($event)">
+    ADMIN <i class="fa-solid fa-caret-down"></i>
+
+    <div class="dropdown" [class.open]="menuOpen">
+      <a routerLink="/perfil">Perfil de Usuário</a>
+      <a routerLink="/precos">Painel de controle</a>
+      <a routerLink="/logout">Sair</a>
+    </div>
+  </div>
+
+</header>

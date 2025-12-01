@@ -1,11 +1,13 @@
 import { Component, signal } from '@angular/core';
 import { Pedidos } from './_Components/pedidos/pedidos';
+import { HeaderComponent } from './_Components/header/header.component';
 
 @Component({
   selector: 'app-root',
-  imports: [Pedidos],
+  standalone: true,
+  imports: [HeaderComponent, Pedidos],
   templateUrl: './app.html',
-  styleUrl: './app.css',
+  styleUrls: ['./app.css'],
 })
 export class App {
   protected readonly title = signal('jbq_func4_frontend');
