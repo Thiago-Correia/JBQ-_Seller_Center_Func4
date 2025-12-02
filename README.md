@@ -51,9 +51,12 @@ Mude nome_do_banco e password
   #exibe as msgs coloridas 
   spring.output.ansi.enabled=always
   ```
-Também é importante usar o arquivo .sql para criar as tabelas, também é possível deixar o spring boot criá-las.
 
-Caso as tabelas ja estejam prontas, use:
+Usando o Spring Boot Dashboard clique em Run:
+
+O servidor iniciará na porta configurada (padrão: 8080).
+
+Depois, no banco de dados, use:
 ```bash
   INSERT INTO produtos (nome, descricao, preco, estoque, ativo) VALUES
   ('Coca-Cola Lata 350ml', 'Refrigerante Coca-Cola tradicional', 4.50, 100, 1),
@@ -79,11 +82,6 @@ Caso as tabelas ja estejam prontas, use:
 ```
 
 Para inserir produtos de exemplo.
-
-
-Usando o Spring Boot Dashboard clique em Run:
-
-O servidor iniciará na porta configurada (padrão: 8080).
 
 Logo após, usando progamas como thunder client no vscode, faça um método post no endereço:
  ```bash
