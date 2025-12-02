@@ -29,7 +29,8 @@
           </thead>
 
           <tbody>
-            <tr *ngFor="let p of pedidos" class="row">
+            @for (p of pedidos; track $index) {
+            <tr class="row">
               <td>{{ p.id }}</td>
               <td>{{ p.clienteNome }}</td>
               <td>R$ {{ p.total.toFixed(2) }}</td>
@@ -39,17 +40,18 @@
                 <button class="btn icon" (click)="abrirDetalhes(p)">👁</button>
               </td>
             </tr>
+            }
           </tbody>
         </table>
 
-        <div class="modal-overlay" *ngIf="selectedPedido">
+        @if (selectedPedido) {
+        <div class="modal-overlay">
           <div class="modal">
             <div class="modal-header">
               <h2>Pedido #{{ selectedPedido.id }}</h2>
               <button class="btn-close" (click)="fecharDetalhes()">✖</button>
             </div>
 
-            <!-- 🔥 NAV DAS ABAS -->
             <div class="modal-tabs">
               <button
                 class="tab-btn"
@@ -70,8 +72,8 @@
             </div>
 
             <div class="modal-body">
-              <!-- 🎯 ABA 1 — DETALHES DO PEDIDO -->
-              <div *ngIf="abaAtiva === 'detalhes'" class="detalhes-container">
+              @if (abaAtiva === 'detalhes') {
+              <div class="detalhes-container">
                 <div class="info-basica">
                   <p><strong>Cliente:</strong> {{ selectedPedido.clienteNome }}</p>
                   <p><strong>Status:</strong> {{ selectedPedido.status }}</p>
@@ -92,21 +94,16 @@
                     </thead>
 
                     <tbody>
-                      <!-- MODO NÃO EDITÁVEL -->
                       @if (!isEditando) { @for (item of selectedPedido.itens; track $index) {
                       <tr>
                         <td>{{ item.produto.nome }}</td>
                         <td>{{ item.quantidade }}</td>
                         <td>R$ {{ item.precoUnitario | number : '1.2-2' }}</td>
                       </tr>
-                      } }
-
-                      <!-- MODO EDITÁVEL -->
-                      @if (isEditando) { @for (item of itensEditaveis; track $index) {
+                      } } @if (isEditando) { @for (item of itensEditaveis; track $index) {
                       <tr>
                         <td>{{ selectedPedido.itens[$index].produto.nome }}</td>
 
-                        <!-- quantidade editável -->
                         <td>
                           <input
                             type="number"
@@ -124,8 +121,7 @@
                 </div>
               </div>
 
-              <!-- 🎯 ABA 2 — HISTÓRICO DO PEDIDO -->
-              @if (abaAtiva === 'historico') {
+              } @if (abaAtiva === 'historico') {
               <div>
                 <h3>Histórico</h3>
 
@@ -142,20 +138,14 @@
             </div>
 
             <div class="modal-footer">
-              <!-- Só mostra botões se o pedido NÃO estiver cancelado -->
               @if (selectedPedido.status !== 'CANCELADO') {
               <ng-container>
-                <!-- botão editar -->
                 @if (!isEditando) {
                 <button class="btn-primary" (click)="habilitarEdicao()">Editar</button>
-                }
-
-                <!-- botão confirmar edição -->
-                @if (isEditando) {
+                } @if (isEditando) {
                 <button class="btn-primary" (click)="confirmarEdicao()">Confirmar</button>
                 }
 
-                <!-- botão cancelar pedido -->
                 <button class="btn-danger" (click)="cancelarPedido(selectedPedido!.id)">
                   Cancelar Pedido
                 </button>
@@ -164,6 +154,7 @@
             </div>
           </div>
         </div>
+        }
       </div>
     </div>
   </main>

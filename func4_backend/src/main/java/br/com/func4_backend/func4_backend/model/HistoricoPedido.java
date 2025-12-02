@@ -34,7 +34,7 @@ public class HistoricoPedido {
 
     private String event; //CREATED. UPDATED, CANCELLED
     @Builder.Default
-    private String event_data = "";  //SOMENTE SE EVENT FOR UPDATED
+    private String event_data = "";
     private LocalDateTime event_time;
     
     public HistoricoPedido(Pedido pedido, String event){

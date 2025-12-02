@@ -77,6 +77,7 @@ export class Pedidos {
         produto: { id: i.produto.id },
         quantidade: i.quantidade,
       })),
+      dataPedido: this.selectedPedido.dataPedido,
     };
 
     console.log('JSON enviado para editarPedido():', payload);
@@ -109,7 +110,16 @@ export class Pedidos {
           item.quantidade = this.itensEditaveis[i].quantidade;
         });
       },
-      error: (err) => console.error(err),
+
+      error: (err) => {
+        console.error(err);
+
+        if (err.status === 409) {
+          alert('⚠ Estoque insuficiente para um dos produtos.');
+        } else {
+          alert('Erro ao atualizar pedido.');
+        }
+      },
     });
   }
 

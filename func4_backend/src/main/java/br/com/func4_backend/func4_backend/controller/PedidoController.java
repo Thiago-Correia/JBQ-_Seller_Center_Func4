@@ -49,7 +49,7 @@ public class PedidoController {
 
     @PostMapping("/{id}/update")
     public ResponseEntity<Pedido> update(@RequestBody Pedido pedido, @PathVariable Long id) {
-        Pedido p = service.updateWithStock(id,pedido);
+        Pedido p = service.updateEstoque(id,pedido);
         return ResponseEntity.ok(p);
     }
 

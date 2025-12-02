@@ -43,7 +43,8 @@ public class PedidoService {
         BigDecimal total = calcularTotal(pedido);
         pedido.setTotal(total);
 
-        atualizarEstoque(pedido, true);
+        atualizarEstoqueAoCriar(pedido, true);
+        removerItensComQuantidadeZero(pedido);
 
         Pedido salvo = pedidoRepo.save(pedido);
 
@@ -58,7 +59,7 @@ public class PedidoService {
     }
 
     @Transactional
-    public Pedido updateWithStock(Long id, Pedido pedidoNovo) {
+    public Pedido updateEstoque(Long id, Pedido pedidoNovo) {
 
         Pedido pedidoVelho = buscar(id);
 
@@ -66,12 +67,12 @@ public class PedidoService {
             throw new ParametersNotMetException("Pedido deve ter ao menos 1 item");
         }
 
-        checarEstoqueAtualizacao(pedidoNovo, pedidoVelho);
+        checarEstoqueAposUpdate(pedidoNovo, pedidoVelho);
 
         BigDecimal total = calcularTotal(pedidoNovo);
         pedidoNovo.setTotal(total);
 
-        reconciliarEstoque(pedidoNovo, pedidoVelho);
+        reconciliarEstoqueAposUpdate(pedidoNovo, pedidoVelho);
         removerItensComQuantidadeZero(pedidoNovo);
 
         pedidoNovo.setId(id);
@@ -97,7 +98,6 @@ public class PedidoService {
             throw new ParametersNotMetException("Pedido já está cancelado");
         }
 
-        // Devolve estoque produto por produto
         for (OrderItem item : pedido.getItens()) {
             Produto produto = produtoService.buscar(item.getProduto().getId());
             produto.setEstoque(produto.getEstoque() + item.getQuantidade());
@@ -125,7 +125,7 @@ public class PedidoService {
     }
 
     @Transactional
-    public void atualizarEstoque(Pedido pedido, boolean remover) {
+    public void atualizarEstoqueAoCriar(Pedido pedido, boolean remover) {
 
         for (OrderItem item : pedido.getItens()) {
 
@@ -147,7 +147,7 @@ public class PedidoService {
 
 
     @Transactional
-    public void checarEstoqueAtualizacao(Pedido novo, Pedido velho) {
+    public void checarEstoqueAposUpdate(Pedido novo, Pedido velho) {
 
         for (OrderItem itemNovo : novo.getItens()) {
 
@@ -176,7 +176,7 @@ public class PedidoService {
     }
 
     @Transactional
-    public void reconciliarEstoque(Pedido novo, Pedido velho) {
+    public void reconciliarEstoqueAposUpdate(Pedido novo, Pedido velho) {
 
         for (OrderItem itemNovo : novo.getItens()) {
 
